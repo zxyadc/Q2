@@ -1,21 +1,19 @@
 package com.github.tvbox.osc.ui.activity;
 
-import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.BounceInterpolator;
-import android.widget.TextView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.tvbox.osc.R;
-import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.BaseActivity;
+import com.github.tvbox.osc.bean.Movie;
+import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.cache.RoomDataManger;
-import com.github.tvbox.osc.cache.VodCollect;
 import com.github.tvbox.osc.event.RefreshEvent;
-import com.github.tvbox.osc.ui.adapter.CollectAdapter;
+import com.github.tvbox.osc.ui.adapter.HistoryAdapter;
 import com.github.tvbox.osc.ui.dialog.ConfirmClearDialog;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
@@ -29,17 +27,22 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CollectActivity extends BaseActivity {
+/**
+ * @author pj567
+ * @date :2021/1/7
+ * @description:
+ */
+public class HistoryActivity extends BaseActivity {
     private ImageView tvDelete;
     private ImageView tvClear;
     private TextView tvDelTip;
     private TvRecyclerView mGridView;
-    public static CollectAdapter collectAdapter;
+    public static HistoryAdapter historyAdapter;
     private boolean delMode = false;
 
     @Override
     protected int getLayoutResID() {
-        return R.layout.activity_collect;
+        return R.layout.activity_history;
     }
 
     @Override
@@ -50,9 +53,9 @@ public class CollectActivity extends BaseActivity {
 
     private void toggleDelMode() {
     	HawkConfig.hotVodDelete = !HawkConfig.hotVodDelete;
-        collectAdapter.notifyDataSetChanged();
+        historyAdapter.notifyDataSetChanged();
         delMode = !delMode;
-        tvDelTip.setVisibility(delMode ? View.VISIBLE : View.GONE);
+        tvDelTip.setVisibility(delMode ? View.VISIBLE : View.GONE);        
     }
 
     private void initView() {
@@ -63,8 +66,8 @@ public class CollectActivity extends BaseActivity {
         mGridView = findViewById(R.id.mGridView);
         mGridView.setHasFixedSize(true);
         mGridView.setLayoutManager(new V7GridLayoutManager(this.mContext, isBaseOnWidth() ? 5 : 6));
-        collectAdapter = new CollectAdapter();
-        mGridView.setAdapter(collectAdapter);
+        historyAdapter = new HistoryAdapter();
+        mGridView.setAdapter(historyAdapter);
         tvDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -74,7 +77,7 @@ public class CollectActivity extends BaseActivity {
         tvClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ConfirmClearDialog dialog = new ConfirmClearDialog(mContext, "Collect");
+                ConfirmClearDialog dialog = new ConfirmClearDialog(mContext, "History");
                 dialog.show();
             }
         });
@@ -105,38 +108,33 @@ public class CollectActivity extends BaseActivity {
 
             }
         });
-        collectAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+        historyAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
                 FastClickCheckUtil.check(view);
-                VodCollect vodInfo = collectAdapter.getData().get(position);
+                if (position == -1) return;
+                VodInfo vodInfo = historyAdapter.getData().get(position);
+
                 if (vodInfo != null) {
                     if (delMode) {
-                        collectAdapter.remove(position);
-                        RoomDataManger.deleteVodCollect(vodInfo.getId());
+                        historyAdapter.remove(position);
+                        RoomDataManger.deleteVodRecord(vodInfo.sourceKey, vodInfo);
                     } else {
-                        if (ApiConfig.get().getSource(vodInfo.sourceKey) != null) {
-                            Bundle bundle = new Bundle();
-                            bundle.putString("id", vodInfo.vodId);
-                            bundle.putString("sourceKey", vodInfo.sourceKey);
-                            jumpActivity(DetailActivity.class, bundle);
-                        } else {
-                            Intent newIntent = new Intent(mContext, SearchActivity.class);
-                            newIntent.putExtra("title", vodInfo.name);
-                            newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(newIntent);
-                        }
+                        Bundle bundle = new Bundle();
+                        bundle.putString("id", vodInfo.id);
+                        bundle.putString("sourceKey", vodInfo.sourceKey);
+                        jumpActivity(DetailActivity.class, bundle);
                     }
                 }
             }
         });
-        collectAdapter.setOnItemLongClickListener(new BaseQuickAdapter.OnItemLongClickListener() {
+        historyAdapter.setOnItemLongClickListener(new BaseQuickAdapter.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(BaseQuickAdapter adapter, View view, int position) {
 //                FastClickCheckUtil.check(view);
-//                VodCollect vodInfo = collectAdapter.getData().get(position);
-//                collectAdapter.remove(position);
-//                RoomDataManger.deleteVodCollect(vodInfo.getId());
+//                VodInfo vodInfo = historyAdapter.getData().get(position);
+//                historyAdapter.remove(position);
+//                RoomDataManger.deleteVodRecord(vodInfo.sourceKey, vodInfo);
                 tvDelete.setFocusable(true);
                 toggleDelMode();
                 return true;
@@ -145,12 +143,13 @@ public class CollectActivity extends BaseActivity {
     }
 
     private void initData() {
-        List<VodCollect> allVodRecord = RoomDataManger.getAllVodCollect();
-        List<VodCollect> vodInfoList = new ArrayList<>();
-        for (VodCollect vodInfo : allVodRecord) {
+        List<VodInfo> allVodRecord = RoomDataManger.getAllVodRecord(100);
+        List<VodInfo> vodInfoList = new ArrayList<>();
+        for (VodInfo vodInfo : allVodRecord) {
+            if (vodInfo.playNote != null && !vodInfo.playNote.isEmpty())vodInfo.note = "上次看到" + vodInfo.playNote;
             vodInfoList.add(vodInfo);
         }
-        collectAdapter.setNewData(vodInfoList);
+        historyAdapter.setNewData(vodInfoList);
     }
 
 
