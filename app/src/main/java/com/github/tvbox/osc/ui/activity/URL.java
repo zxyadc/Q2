@@ -13,13 +13,13 @@ public class URL {
     // https://ghproxy.com/https://raw.githubusercontent.com//mlabalabala/TVResource/main/boxCfg/ori_source.json
     // https://raw.bunnylblbblbl.eu.org/https://raw.githubusercontent.com/mlabalabala/TVResource/main/boxCfg/ori_source.json
     // 默认线路
-    public static final String DEFAULT_API_NAME = "默认";
-    public static final String DEFAULT_API_URL = "https://raw.gitmirror.com/gaotianliuyun/gao/master/0825.json";
+   // public static final String DEFAULT_API_NAME = "默认";
+   // public static final String DEFAULT_API_URL = "https://raw.gitmirror.com/gaotianliuyun/gao/master/0825.json";
     // public static final String DEFAULT_API_URL = "https://raw.githubusercontent.com/gaotianliuyun/gao/master/0821.json";
     // 默认仓库线路
-    public static final String DEFAULT_STORE_API_URL = "https://zhxy.neocities.org/duo1.json";
+ //   public static final String DEFAULT_STORE_API_URL = "https://zhxy.neocities.org/duo.json";
     // 默认直播线路
-    public static final String DEFAULT_LIVE_URL = "https://raw.gitmirror.com/mlabalabala/TVResource/main/boxCfg/live.txt";
+  //  public static final String DEFAULT_LIVE_URL = "https://raw.gitmirror.com/mlabalabala/TVResource/main/boxCfg/live.txt";
 
 
 }
